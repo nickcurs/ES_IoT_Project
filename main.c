@@ -1,5 +1,4 @@
 #include <msp430g2553.h>
-#include <math.h>
 
 volatile long ADC_Value;
 char result[100];
@@ -42,27 +41,24 @@ void main(void)
         ConfigureAdc_therm();
         ADC_Value = getADC_Value();
         ////////////////////////////////
-        double TempConv;
-        TempConv = ADC_Value / 10000;
-        TempConv = log(TempConv);
-        TempConv = TempConv / 3500;
-        TempConv = TempConv + (1.0/(25+273.15));             //raw data to Celcius
-        TempConv = 1.0 / TempConv;
-        TempConv = TempConv - 273.15;
+        int TempConv;
+        TempConv = ADC_Value - 30;                          //convert raw data to F
         ///////////////////////////////
-        adc_out(ADC_Value);
+        adc_out(TempConv);
         while((IFG2 & UCA0TXIFG)==0);
             UCA0TXBUF = ',';
         //send pot value
         ConfigureAdc_pot();
         ADC_Value = getADC_Value();
-        adc_out(ADC_Value);
+        int potPercent;
+        potPercent = (100*ADC_Value)/1024;                  //make pot value to percent
+        adc_out(potPercent);
         while((IFG2 & UCA0TXIFG)==0);
             UCA0TXBUF = '\n';
         while((IFG2 & UCA0TXIFG)==0);
             UCA0TXBUF = '\r';
 
-        _delay_cycles(1000);        //slows down data for thingspeak, can only upload every 15 seconds
+        _delay_cycles(10000000);        //slows down data for thingspeak, can only upload every 15 seconds
     }
 }
 
