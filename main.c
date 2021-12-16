@@ -1,4 +1,5 @@
 #include <msp430g2553.h>
+#include <math.h>
 
 volatile long ADC_Value;
 char result[100];
@@ -29,19 +30,30 @@ void main(void)
 
     while(1){
         _delay_cycles(2000000);
-
+        //send light value
         ConfigureAdc_ldo();
         ADC_Value = getADC_Value();
-        adc_out(ADC_Value);
+        int lightPercent;
+        lightPercent = (100*ADC_Value)/1024;                 //make light value to percent
+        adc_out(lightPercent);
         while((IFG2 & UCA0TXIFG)==0);
             UCA0TXBUF = ',';
-
+        //send temperature value
         ConfigureAdc_therm();
         ADC_Value = getADC_Value();
+        ////////////////////////////////
+        double TempConv;
+        TempConv = ADC_Value / 10000;
+        TempConv = log(TempConv);
+        TempConv = TempConv / 3500;
+        TempConv = TempConv + (1.0/(25+273.15));             //raw data to Celcius
+        TempConv = 1.0 / TempConv;
+        TempConv = TempConv - 273.15;
+        ///////////////////////////////
         adc_out(ADC_Value);
         while((IFG2 & UCA0TXIFG)==0);
             UCA0TXBUF = ',';
-
+        //send pot value
         ConfigureAdc_pot();
         ADC_Value = getADC_Value();
         adc_out(ADC_Value);
@@ -49,7 +61,8 @@ void main(void)
             UCA0TXBUF = '\n';
         while((IFG2 & UCA0TXIFG)==0);
             UCA0TXBUF = '\r';
-        _delay_cycles(10000000);        //slows down data for thingspeak, can only upload every 15 seconds
+
+        _delay_cycles(1000);        //slows down data for thingspeak, can only upload every 15 seconds
     }
 }
 
